@@ -4,83 +4,62 @@ import './index.css';
 import App from './App';
 import registerServiceWorker from './registerServiceWorker';
 
-class FriendsContainer extends React.Component {
-    constructor(props) {
-        super(props)
+const testToken = "https://us1.pusherplatform.io/services/chatkit_token_provider/v1/3c432e8b-8092-43c8-b487-84812fa8a87b/token"
+const instanceLocator = "v1:us1:3c432e8b-8092-43c8-b487-84812fa8a87b"
+const roomId = 15613464
+const username = 'tkachuk_lizaveta'
 
+class App extends React.Component {
+    constructor() {
+        super()
         this.state = {
-            name: 'Tyler McGinnis',
-            friends: [
-                'Jake Lingwall',
-                'Sarah Drasner',
-                'Merrick Christensen'
-            ],
+            messages: []
         }
+        this.sendMessage = this.sendMessage.bind(this)
+    }
 
-        this.addFriend = this.addFriend.bind(this)
-    }
-    addFriend(friend) {
-        this.setState((state) => ({
-            friends: state.friends.concat([friend])
-        }))
-    }
-    render() {
-        return (
-            <div>
-                <h3> Name: {this.state.name} </h3>
-                <AddFriend addNew={this.addFriend} />
-                <ShowList names={this.state.friends} />
-            </div>
-        )
-    }
-}
-class AddFriend extends React.Component {
-    constructor(props) {
-        super(props)
+    componentDidMount() {
+        const chatManager = new Chatkit.ChatManager({
+            instanceLocator: instanceLocator,
+            userId: 'janedoe',
+            tokenProvider: new Chatkit.TokenProvider({
+                url: testToken
+            })
+        })
 
-        this.state = {
-            newFriend: ''
-        }
+        chatManager.connect()
+            .then(currentUser => {
+                this.currentUser = currentUser
+                this.currentUser.subscribeToRoom({
+                    roomId: roomId,
+                    hooks: {
+                        onNewMessage: message => {
 
-        this.updateNewFriend = this.updateNewFriend.bind(this)
-        this.handleAddNew = this.handleAddNew.bind(this)
+                            this.setState({
+                                messages: [...this.state.messages, message]
+                            })
+                        }
+                    }
+                })
+            })
     }
-    updateNewFriend(e) {
-        this.setState({
-            newFriend: e.target.value
+
+    sendMessage(text) {
+        this.currentUser.sendMessage({
+            text,
+            roomId: roomId
         })
     }
-    handleAddNew() {
-        this.props.addNew(this.state.newFriend)
-        this.setState({
-            newFriend: ''
-        })
-    }
+
     render() {
-        return (
-            <div>
-                <input
-                    type="text"
-                    value={this.state.newFriend}
-                    onChange={this.updateNewFriend}
-                />
-                <button onClick={this.handleAddNew}> Add Friend </button>
-            </div>
-        )
+
     }
 }
-class ShowList extends React.Component {
-    render() {
-        return (
-            <div>
-                <h3> Friends </h3>
-                <ul>
-                    {this.props.names.map((friend) => {
-                        return <li> {friend} </li>
-                    })}
-                </ul>
-            </div>
-        )
-    }
+
+
+
+function Title() {
+    return <p className="title">My awesome chat app</p>
 }
-ReactDOM.render(<FriendsContainer />, document.getElementById('root'));
+
+ReactDOM.render(<App />, document.getElementById('root'));
